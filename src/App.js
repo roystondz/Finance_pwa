@@ -10,10 +10,12 @@ import {
 } from "react-bootstrap";
 import { PlusCircle } from "react-bootstrap-icons";
 import { useState,useEffect } from "react";
-//  import Button from 'react-bootstrap/Button';
+
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
 import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -27,12 +29,15 @@ function App() {
   const [debitAmount ,setDebitAmount] = useState(0);
 
   
-  const[ amount, setAmount ] = useState(creditAmount - debitAmount);
+  const[ amount, setAmount ] = useState(0);
   const[newAmount, setNewAmount] = useState();
 
   const [creditButton ,setCreditButton] = useState(false);
   const [debitButton ,setDebitButton] = useState(false);
-  const [data, setData] = useState({});
+  const [data, setData] = useState({
+    labels: [],
+    datasets: [],
+  });
   const [transactions, setTransactions] = useState([]);
 
   const handleClose = () => setShow(false);
@@ -43,7 +48,7 @@ function App() {
       labels: ["Credit", "Debit"],
       datasets: [
         {
-          data: [creditAmount, debitAmount], // Example values
+          data: [creditAmount || 0, debitAmount || 0], // Example values
           backgroundColor: [
             "rgba(54, 162, 235, 0.7)", // Credit
             "rgba(255, 99, 132, 0.7)"  // Debit
@@ -69,7 +74,7 @@ function App() {
     }
     else if(debitButton){
       setDebitAmount(debitAmount + Math.abs(parseInt(newAmount)));
-      setAmount(amount + parseInt(newAmount));
+      setAmount(amount - parseInt(newAmount));
     }
     else{
       alert("Please enter a valid amount");
@@ -167,20 +172,28 @@ function App() {
             </Row>
 
             {/* Trends */}
-            <h5>Trends</h5>
+            <h5>Income Distribution Chart</h5>
+            {amount>0 || amount <0 ? (
             <div
               style={{
-                height: "50px",
+                height: "300px",
                 backgroundColor: "#e9ecef",
                 borderRadius: "5px",
-                marginBottom: "20px",
+                marginBottom: "10px",
                 display: "flex",
-                alignItems: "center",
+                padding: "10px",
                 justifyContent: "center",
+                alignItems: "center",
               }}
             >
-              {/* <Pie data={data}/> */}
-            </div>
+                <div style={{ height: "250px", marginBottom: "20px" }}>
+                {data.datasets?.length > 0 && <Pie data={data} />}
+              </div>
+               
+            </div>):
+            (
+              <Alert variant="info">No data available for chart</Alert>
+             )}
 
             {/* Transactions */}
             <h5>Transactions</h5>
