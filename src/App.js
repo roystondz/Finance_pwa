@@ -9,10 +9,11 @@ import {
   Alert
 } from "react-bootstrap";
 import { PlusCircle } from "react-bootstrap-icons";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 //  import Button from 'react-bootstrap/Button';
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
+import { Pie } from "react-chartjs-2";
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -21,25 +22,70 @@ function App() {
   window.addEventListener("offline", () => setIsOnline(false));
 
   const [show, setShow] = useState(false);
-
+  const [name, setName] = useState("");
+  const [creditAmount ,setCreditAmount] = useState(0);
+  const [debitAmount ,setDebitAmount] = useState(0);
 
   
-  const[ amount, setAmount ] = useState(0);
+  const[ amount, setAmount ] = useState(creditAmount - debitAmount);
   const[newAmount, setNewAmount] = useState();
 
   const [creditButton ,setCreditButton] = useState(false);
   const [debitButton ,setDebitButton] = useState(false);
-
-  const [creditAmount ,setCreditAmount] = useState(0);
-  const [debitAmount ,setDebitAmount] = useState(0);
+  const [data, setData] = useState({});
+  const [transactions, setTransactions] = useState([]);
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   
+  useEffect(()=>{
+    const data = {
+      labels: ["Credit", "Debit"],
+      datasets: [
+        {
+          data: [creditAmount, debitAmount], // Example values
+          backgroundColor: [
+            "rgba(54, 162, 235, 0.7)", // Credit
+            "rgba(255, 99, 132, 0.7)"  // Debit
+          ],
+          borderColor: [
+            "rgba(54, 162, 235, 1)",
+            "rgba(255, 99, 132, 1)"
+          ],
+          borderWidth: 1
+        }
+      ]
+    };
+    setData(data);
+  },[creditAmount,debitAmount]);
+
   const handleAmountChange = (e) => {
+    
     e.preventDefault();
     handleClose();
-    
+    if(creditButton && newAmount>0){
+      setCreditAmount(creditAmount + parseInt(newAmount));
+      setAmount(amount + parseInt(newAmount));
+    }
+    else if(debitButton){
+      setDebitAmount(debitAmount + Math.abs(parseInt(newAmount)));
+      setAmount(amount + parseInt(newAmount));
+    }
+    else{
+      alert("Please enter a valid amount");
+    }
+    const newTransaction = {
+      id: transactions.length + 1,
+      name: (transactions.length + 1)+" - "+name,
+      amount: parseInt(newAmount),
+      type: creditButton ? "credit" : "debit",
+      icon: creditButton ? "💵" : "🛒",
+    };
+    setTransactions([newTransaction, ...transactions]);
+    setNewAmount(0);
+    setCreditButton(false);
+    setDebitButton(false);
+    setName("");
   }
 
 
@@ -54,7 +100,7 @@ function App() {
   //   { id: 4, name: "Groceries", amount: -50, icon: "🥖" },
   // ];
 
-  const [transactions, setTransactions] = useState([]);
+  
   return (
     <>
       <Container
@@ -133,7 +179,7 @@ function App() {
                 justifyContent: "center",
               }}
             >
-              <span style={{ color: "#007bff" }}>📈 Trend Chart</span>
+              {/* <Pie data={data}/> */}
             </div>
 
             {/* Transactions */}
@@ -153,9 +199,9 @@ function App() {
                     </span>
                     {tx.name}
                   </div>
-                  <div style={{ color: tx.amount < 0 ? "red" : "green" }}>
-                    {tx.amount < 0
-                      ? `- $${Math.abs(tx.amount)}`
+                  <div style={{ color: tx.type === "debit" ? "red" : "green" }}>
+                    {tx.type === "debit" ?
+                       `- $${Math.abs(tx.amount)}`
                       : `+ $${tx.amount}`}
                   </div>
                 </ListGroup.Item>
@@ -183,6 +229,8 @@ function App() {
                       <Form.Label>Type(used for)</Form.Label>
                       <Form.Control
                         type="text"
+                        value={name}
+                        onChange={(e)=>setName(e.target.value)}
                         placeholder="e.g., Coffee, Salary"
                         autoFocus
                       />
