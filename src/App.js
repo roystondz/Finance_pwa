@@ -176,7 +176,7 @@ function App() {
             {amount>0 || amount <0 ? (
             <div
               style={{
-                height: "300px",
+                height: "200px",
                 backgroundColor: "#e9ecef",
                 borderRadius: "5px",
                 marginBottom: "10px",
@@ -186,7 +186,7 @@ function App() {
                 alignItems: "center",
               }}
             >
-                <div style={{ height: "250px", marginBottom: "20px" }}>
+                <div style={{ height: "150px", marginBottom: "10px" }}>
                 {data.datasets?.length > 0 && <Pie data={data} />}
               </div>
                
@@ -199,7 +199,7 @@ function App() {
             <h5>Transactions</h5>
             <ListGroup
               variant=""
-              style={{ maxHeight: "200px", overflowY: "auto" }}
+              style={{ maxHeight: "170px", overflowY: "auto" }}
             >
               { transactions.length>0 ? transactions.map((tx) => (
                 <ListGroup.Item
