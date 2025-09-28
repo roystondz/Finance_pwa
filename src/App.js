@@ -38,7 +38,11 @@ function App() {
     labels: [],
     datasets: [],
   });
-  const [transactions, setTransactions] = useState([]);
+  let storedTransactions = JSON.parse(localStorage.getItem("transactions"));
+  if(!storedTransactions){
+    storedTransactions = [];
+  }
+  const [transactions, setTransactions] = useState(storedTransactions);
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
@@ -86,6 +90,7 @@ function App() {
       type: creditButton ? "credit" : "debit",
       icon: creditButton ? "💵" : "🛒",
     };
+    localStorage.setItem("transactions", JSON.stringify([newTransaction, ...transactions]));
     setTransactions([newTransaction, ...transactions]);
     setNewAmount(0);
     setCreditButton(false);
