@@ -18,6 +18,11 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 function App() {
+  let storedTransactions = JSON.parse(localStorage.getItem("transactions"));
+  if(!storedTransactions){
+    storedTransactions = [];
+  }
+  const [transactions, setTransactions] = useState(storedTransactions);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   window.addEventListener("online", () => setIsOnline(true));
@@ -25,8 +30,10 @@ function App() {
 
   const [show, setShow] = useState(false);
   const [name, setName] = useState("");
-  const [creditAmount ,setCreditAmount] = useState(0);
-  const [debitAmount ,setDebitAmount] = useState(0);
+  let credit = transactions.filter((tx) => tx.type === "credit").reduce((acc, tx) => acc + tx.amount, 0);
+  let debit = transactions.filter((tx) => tx.type === "debit").reduce((acc, tx) => acc + Math.abs(tx.amount), 0);
+  const [creditAmount ,setCreditAmount] = useState(credit);
+  const [debitAmount ,setDebitAmount] = useState(debit);
 
   
   const[ amount, setAmount ] = useState(0);
@@ -38,11 +45,7 @@ function App() {
     labels: [],
     datasets: [],
   });
-  let storedTransactions = JSON.parse(localStorage.getItem("transactions"));
-  if(!storedTransactions){
-    storedTransactions = [];
-  }
-  const [transactions, setTransactions] = useState(storedTransactions);
+  
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
@@ -143,6 +146,16 @@ function App() {
             </span>{" "}
             Finance App
           </h4>
+          <p>Manage your finances effectively</p>
+          <Button  variant="light" size="sm" onClick={()=>{
+            localStorage.clear();
+            setTransactions([]);
+            setAmount(0);
+            setCreditAmount(0);
+            setDebitAmount(0);
+          }}>
+            Reset App
+          </Button>
         </div>
 
         <Card style={{ border: "none", borderRadius: "0" }}>
@@ -222,6 +235,10 @@ function App() {
                        `- $${Math.abs(tx.amount)}`
                       : `+ $${tx.amount}`}
                   </div>
+                  <div>
+                    <Badge bg="light" text="dark">{tx.type}</Badge>
+                  </div>
+                  
                 </ListGroup.Item>
               )):<Alert variant="info">No transactions available</Alert>}
             </ListGroup>
