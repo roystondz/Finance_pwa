@@ -6,10 +6,10 @@ import {
   Button,
   Badge,
   ListGroup,
-  Alert
+  Alert,
 } from "react-bootstrap";
 import { PlusCircle } from "react-bootstrap-icons";
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
@@ -19,7 +19,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 function App() {
   let storedTransactions = JSON.parse(localStorage.getItem("transactions"));
-  if(!storedTransactions){
+  if (!storedTransactions) {
     storedTransactions = [];
   }
   const [transactions, setTransactions] = useState(storedTransactions);
@@ -28,29 +28,33 @@ function App() {
   window.addEventListener("online", () => setIsOnline(true));
   window.addEventListener("offline", () => setIsOnline(false));
 
+  
   const [show, setShow] = useState(false);
   const [name, setName] = useState("");
-  let credit = transactions.filter((tx) => tx.type === "credit").reduce((acc, tx) => acc + tx.amount, 0);
-  let debit = transactions.filter((tx) => tx.type === "debit").reduce((acc, tx) => acc + Math.abs(tx.amount), 0);
-  const [creditAmount ,setCreditAmount] = useState(credit);
-  const [debitAmount ,setDebitAmount] = useState(debit);
+  let credit = transactions
+    .filter((tx) => tx.type === "credit")
+    .reduce((acc, tx) => acc + tx.amount, 0);
+  let debit = transactions
+    .filter((tx) => tx.type === "debit")
+    .reduce((acc, tx) => acc + Math.abs(tx.amount), 0);
+  const [creditAmount, setCreditAmount] = useState(credit);
+  const [debitAmount, setDebitAmount] = useState(debit);
 
-  
-  const[ amount, setAmount ] = useState(0);
-  const[newAmount, setNewAmount] = useState();
+  const [amount, setAmount] = useState(0);
+  const [newAmount, setNewAmount] = useState();
 
-  const [creditButton ,setCreditButton] = useState(false);
-  const [debitButton ,setDebitButton] = useState(false);
+  const [creditButton, setCreditButton] = useState(false);
+  const [debitButton, setDebitButton] = useState(false);
   const [data, setData] = useState({
     labels: [],
     datasets: [],
   });
+
+  const handleClose = () => { setShow(false); setShowReset(false); };
+  const handleShow = () => { setShow(true); };  
   
 
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
-  
-  useEffect(()=>{
+  useEffect(() => {
     const data = {
       labels: ["Credit", "Debit"],
       datasets: [
@@ -58,49 +62,45 @@ function App() {
           data: [creditAmount || 0, debitAmount || 0], // Example values
           backgroundColor: [
             "rgba(54, 162, 235, 0.7)", // Credit
-            "rgba(255, 99, 132, 0.7)"  // Debit
+            "rgba(255, 99, 132, 0.7)", // Debit
           ],
-          borderColor: [
-            "rgba(54, 162, 235, 1)",
-            "rgba(255, 99, 132, 1)"
-          ],
-          borderWidth: 1
-        }
-      ]
+          borderColor: ["rgba(54, 162, 235, 1)", "rgba(255, 99, 132, 1)"],
+          borderWidth: 1,
+        },
+      ],
     };
     setData(data);
-  },[creditAmount,debitAmount]);
+  }, [creditAmount, debitAmount]);
 
   const handleAmountChange = (e) => {
-    
     e.preventDefault();
     handleClose();
-    if(creditButton && newAmount>0){
+    if (creditButton && newAmount > 0) {
       setCreditAmount(creditAmount + parseInt(newAmount));
       setAmount(amount + parseInt(newAmount));
-    }
-    else if(debitButton){
+    } else if (debitButton) {
       setDebitAmount(debitAmount + Math.abs(parseInt(newAmount)));
       setAmount(amount - parseInt(newAmount));
-    }
-    else{
+    } else {
       alert("Please enter a valid amount");
     }
     const newTransaction = {
       id: transactions.length + 1,
-      name: (transactions.length + 1)+" - "+name,
+      name: transactions.length + 1 + " - " + name,
       amount: parseInt(newAmount),
       type: creditButton ? "credit" : "debit",
       icon: creditButton ? "💵" : "🛒",
     };
-    localStorage.setItem("transactions", JSON.stringify([newTransaction, ...transactions]));
+    localStorage.setItem(
+      "transactions",
+      JSON.stringify([newTransaction, ...transactions])
+    );
     setTransactions([newTransaction, ...transactions]);
     setNewAmount(0);
     setCreditButton(false);
     setDebitButton(false);
     setName("");
-  }
-
+  };
 
   // const transactions = [
   //   { id: 1, name: "Coffee", amount: -3, icon: "☕" },
@@ -112,8 +112,18 @@ function App() {
   //   { id: 3, name: "Salary", amount: 1800, icon: "💵" },
   //   { id: 4, name: "Groceries", amount: -50, icon: "🥖" },
   // ];
+  const [showReset, setShowReset] = useState(false);
 
-  
+  const handleShowReset = () => { setShowReset(true); };
+  const handleCloseRest = ()=> setShowReset(false);
+  const handleReset = () => {
+    handleCloseRest();
+    localStorage.clear();
+    setTransactions([]);
+    setAmount(0);
+    setCreditAmount(0);
+    setDebitAmount(0);
+  }
   return (
     <>
       <Container
@@ -147,13 +157,10 @@ function App() {
             Finance App
           </h4>
           <p>Manage your finances effectively</p>
-          <Button  variant="light" size="sm" onClick={()=>{
-            localStorage.clear();
-            setTransactions([]);
-            setAmount(0);
-            setCreditAmount(0);
-            setDebitAmount(0);
-          }}>
+          <Button
+            variant="light" size="sm"
+            onClick={handleShowReset}
+          >
             Reset App
           </Button>
         </div>
@@ -191,27 +198,26 @@ function App() {
 
             {/* Trends */}
             <h5>Income Distribution Chart</h5>
-            {amount>0 || amount <0 ? (
-            <div
-              style={{
-                height: "200px",
-                backgroundColor: "#e9ecef",
-                borderRadius: "5px",
-                marginBottom: "10px",
-                display: "flex",
-                padding: "10px",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
+            {amount > 0 || amount < 0 ? (
+              <div
+                style={{
+                  height: "200px",
+                  backgroundColor: "#e9ecef",
+                  borderRadius: "5px",
+                  marginBottom: "10px",
+                  display: "flex",
+                  padding: "10px",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
                 <div style={{ height: "150px", marginBottom: "10px" }}>
-                {data.datasets?.length > 0 && <Pie data={data} />}
+                  {data.datasets?.length > 0 && <Pie data={data} />}
+                </div>
               </div>
-               
-            </div>):
-            (
+            ) : (
               <Alert variant="info">No data available for chart</Alert>
-             )}
+            )}
 
             {/* Transactions */}
             <h5>Transactions</h5>
@@ -219,28 +225,35 @@ function App() {
               variant=""
               style={{ maxHeight: "170px", overflowY: "auto" }}
             >
-              { transactions.length>0 ? transactions.map((tx) => (
-                <ListGroup.Item
-                  key={tx.id}
-                  className="d-flex justify-content-between align-items-center"
-                >
-                  <div>
-                    <span style={{ fontSize: "1.2rem", marginRight: "10px" }}>
-                      {tx.icon}
-                    </span>
-                    {tx.name}
-                  </div>
-                  <div style={{ color: tx.type === "debit" ? "red" : "green" }}>
-                    {tx.type === "debit" ?
-                       `- $${Math.abs(tx.amount)}`
-                      : `+ $${tx.amount}`}
-                  </div>
-                  <div>
-                    <Badge bg="light" text="dark">{tx.type}</Badge>
-                  </div>
-                  
-                </ListGroup.Item>
-              )):<Alert variant="info">No transactions available</Alert>}
+              {transactions.length > 0 ? (
+                transactions.map((tx) => (
+                  <ListGroup.Item
+                    key={tx.id}
+                    className="d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      <span style={{ fontSize: "1.2rem", marginRight: "10px" }}>
+                        {tx.icon}
+                      </span>
+                      {tx.name}
+                    </div>
+                    <div
+                      style={{ color: tx.type === "debit" ? "red" : "green" }}
+                    >
+                      {tx.type === "debit"
+                        ? `- $${Math.abs(tx.amount)}`
+                        : `+ $${tx.amount}`}
+                    </div>
+                    <div>
+                      <Badge bg="light" text="dark">
+                        {tx.type}
+                      </Badge>
+                    </div>
+                  </ListGroup.Item>
+                ))
+              ) : (
+                <Alert variant="info">No transactions available</Alert>
+              )}
             </ListGroup>
 
             <Button
@@ -265,7 +278,7 @@ function App() {
                       <Form.Control
                         type="text"
                         value={name}
-                        onChange={(e)=>setName(e.target.value)}
+                        onChange={(e) => setName(e.target.value)}
                         placeholder="e.g., Coffee, Salary"
                         autoFocus
                       />
@@ -274,15 +287,27 @@ function App() {
                       className="mb-3"
                       controlId="exampleForm.ControlInput1"
                     >
-                      <Form.Label>Credited or Debited</Form.Label><br></br>
-                      <Button variant={creditButton?"success":"outline-success"} className="me-2" onClick={()=>{
-                        setCreditButton(true);
-                        setDebitButton(false);
-                      }} >Credited</Button>
-                      <Button variant={debitButton?"danger":"outline-danger"} onClick={()=>{
-                        setDebitButton(true);
-                        setCreditButton(false);
-                      }}>Debited</Button>
+                      <Form.Label>Credited or Debited</Form.Label>
+                      <br></br>
+                      <Button
+                        variant={creditButton ? "success" : "outline-success"}
+                        className="me-2"
+                        onClick={() => {
+                          setCreditButton(true);
+                          setDebitButton(false);
+                        }}
+                      >
+                        Credited
+                      </Button>
+                      <Button
+                        variant={debitButton ? "danger" : "outline-danger"}
+                        onClick={() => {
+                          setDebitButton(true);
+                          setCreditButton(false);
+                        }}
+                      >
+                        Debited
+                      </Button>
                     </Form.Group>
                     <Form.Group
                       className="mb-3"
@@ -292,13 +317,11 @@ function App() {
                       <Form.Control
                         type="number"
                         value={newAmount}
-                        onChange={(e)=>setNewAmount(e.target.value)}
+                        onChange={(e) => setNewAmount(e.target.value)}
                         placeholder="+ 100 for income, - 50 for expense"
                         autoFocus
                       />
                     </Form.Group>
-                    
-                    
                   </Form>
                 </Modal.Body>
                 <Modal.Footer>
@@ -306,6 +329,22 @@ function App() {
                     Close
                   </Button>
                   <Button variant="primary" onClick={handleAmountChange}>
+                    Save Changes
+                  </Button>
+                </Modal.Footer>
+              </Modal>
+              <Modal show={showReset} onHide={handleCloseRest}>
+                <Modal.Header closeButton>
+                  <Modal.Title>Reset App</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                  Woohoo, You are Clearing!
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button variant="secondary" onClick={handleCloseRest}>
+                    Close
+                  </Button>
+                  <Button variant="danger" onClick={handleReset}>
                     Save Changes
                   </Button>
                 </Modal.Footer>
