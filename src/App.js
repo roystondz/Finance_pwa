@@ -56,7 +56,6 @@ function App() {
   const handleShow = () => {
     setShow(true);
   };
-  
 
   useEffect(() => {
     const data = {
@@ -121,7 +120,6 @@ function App() {
     }, 1000);
   }, []);
 
-  
   // const transactions = [
   //   { id: 1, name: "Coffee", amount: -3, icon: "☕" },
   //   { id: 2, name: "Rent", amount: -500, icon: "🏠" },
@@ -166,236 +164,239 @@ function App() {
   }
 
   return (
-    
-      <Container
-        className={`p-3 rounded shadow-sm bg-${theme}`}
+    <Container
+      className={`p-3 rounded shadow-sm bg-${theme}`}
+      style={{
+        minWidth: "400px",
+        marginTop: "20px",
+        borderRadius: "10px",
+        padding: "10",
+        width: "90%",
+        margin: "auto",
+        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+        borderBottomLeftRadius: "10px",
+        borderBottomRightRadius: "10px",
+        textAlign: "center",
+        maxWidth: "500px",
+        border: "1px solid #ddd",
+      }}
+    >
+      {/* Header */}
+      <div
         style={{
-          minWidth: "400px",
-          marginTop: "20px",
-          borderRadius: "10px",
-          padding: "10",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          borderBottomLeftRadius: "10px",
-          borderBottomRightRadius: "10px",
-          textAlign: "center",
-          maxWidth: "500px",
-          border: "1px solid #ddd",
+          backgroundColor: "#007bff",
+          color: "white",
+          padding: "20px",
+          borderTopLeftRadius: "10px",
+          borderTopRightRadius: "10px",
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            backgroundColor: "#007bff",
-            color: "white",
-            padding: "20px",
-            borderTopLeftRadius: "10px",
-            borderTopRightRadius: "10px",
-          }}
-        >
-          <h4>
-            <span role="img" aria-label="wallet">
-              👛
-            </span>{" "}
-            Finance App
-          </h4>
+        <h4>
+          <span role="img" aria-label="wallet">
+            👛
+          </span>{" "}
+          Finance App
+        </h4>
 
-          <p>Manage your finances effectively</p>
-          <Button variant="light" size="sm" onClick={handleShowReset} className="p-2">
-            Reset App
-          </Button>
-          <Button variant="secondary" onClick={toggleDarkMode} className="ms-2 p-2">
+        <p>Manage your finances effectively</p>
+        <Button
+          variant="light"
+          size="sm"
+          onClick={handleShowReset}
+          className="p-2"
+        >
+          Reset App
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={toggleDarkMode}
+          className="ms-2 p-2"
+        >
           {theme === "dark" ? <Sun /> : <Moon />}{" "}
           {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </Button>
-        </div>
+        </Button>
+      </div>
 
-        <Card style={{ border: "none", borderRadius: "0" }}>
-          <Card.Body>
-            {/* Balance */}
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h2>${amount}</h2>
-              <Badge bg={isOnline ? "success" : "secondary"}>
-                {isOnline ? "Online" : "Offline"}
-              </Badge>
-            </div>
+      <Card style={{ border: "none", borderRadius: "0" }}>
+        <Card.Body>
+          {/* Balance */}
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h2>${amount}</h2>
+            <Badge bg={isOnline ? "success" : "secondary"}>
+              {isOnline ? "Online" : "Offline"}
+            </Badge>
+          </div>
 
-            {/* Dashboard */}
-            <h5>Dashboard</h5>
-            <Row className="mb-3">
-              <Col>
-                <Card className="text-center">
-                  <Card.Body>
-                    <Card.Title>Income</Card.Title>
-                    <Card.Text>${creditAmount}</Card.Text>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col>
-                <Card className="text-center">
-                  <Card.Body>
-                    <Card.Title>Expenses</Card.Title>
-                    <Card.Text>${debitAmount}</Card.Text>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+          {/* Dashboard */}
+          <h5>Dashboard</h5>
+          <Row className="mb-3">
+            <Col>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Title>Income</Card.Title>
+                  <Card.Text>${creditAmount}</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Title>Expenses</Card.Title>
+                  <Card.Text>${debitAmount}</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
 
-            {/* Trends */}
-            <h5>Income Distribution Chart</h5>
-            {amount > 0 || amount < 0 ? (
-              <div
-                style={{
-                  height: "200px",
-                  backgroundColor: "#e9ecef",
-                  borderRadius: "5px",
-                  marginBottom: "10px",
-                  display: "flex",
-                  padding: "10px",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ height: "150px", marginBottom: "10px" }}>
-                  {data.datasets?.length > 0 && <Pie data={data} />}
-                </div>
+          {/* Trends */}
+          <h5>Income Distribution Chart</h5>
+          {amount > 0 || amount < 0 ? (
+            <div
+              style={{
+                height: "200px",
+                backgroundColor: "#e9ecef",
+                borderRadius: "5px",
+                marginBottom: "10px",
+                display: "flex",
+                padding: "10px",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ height: "150px", marginBottom: "10px" }}>
+                {data.datasets?.length > 0 && <Pie data={data} />}
               </div>
+            </div>
+          ) : (
+            <Alert variant="info">No data available for chart</Alert>
+          )}
+
+          {/* Transactions */}
+          <h5>Transactions</h5>
+          <ListGroup
+            variant=""
+            style={{ maxHeight: "170px", overflowY: "auto" }}
+          >
+            {transactions.length > 0 ? (
+              transactions.map((tx) => (
+                <ListGroup.Item
+                  key={tx.id}
+                  className="d-flex justify-content-between align-items-center"
+                >
+                  <div>
+                    <span style={{ fontSize: "1.2rem", marginRight: "10px" }}>
+                      {tx.icon}
+                    </span>
+                    {tx.name}
+                  </div>
+                  <div style={{ color: tx.type === "debit" ? "red" : "green" }}>
+                    {tx.type === "debit"
+                      ? `- $${Math.abs(tx.amount)}`
+                      : `+ $${tx.amount}`}
+                  </div>
+                  <div>
+                    <Badge bg="light" text="dark">
+                      {tx.type}
+                    </Badge>
+                  </div>
+                </ListGroup.Item>
+              ))
             ) : (
-              <Alert variant="info">No data available for chart</Alert>
+              <Alert variant="info">No transactions available</Alert>
             )}
+          </ListGroup>
 
-            {/* Transactions */}
-            <h5>Transactions</h5>
-            <ListGroup
-              variant=""
-              style={{ maxHeight: "170px", overflowY: "auto" }}
-            >
-              {transactions.length > 0 ? (
-                transactions.map((tx) => (
-                  <ListGroup.Item
-                    key={tx.id}
-                    className="d-flex justify-content-between align-items-center"
+          <Button variant="primary" className="mt-3 w-100" onClick={handleShow}>
+            <PlusCircle /> Add Transaction
+          </Button>
+          <>
+            <Modal show={show} onHide={handleClose}>
+              <Modal.Header closeButton>
+                <Modal.Title>Add Transaction</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <Form>
+                  <Form.Group
+                    className="mb-3"
+                    controlId="exampleForm.ControlInput1"
                   >
-                    <div>
-                      <span style={{ fontSize: "1.2rem", marginRight: "10px" }}>
-                        {tx.icon}
-                      </span>
-                      {tx.name}
-                    </div>
-                    <div
-                      style={{ color: tx.type === "debit" ? "red" : "green" }}
+                    <Form.Label>Type(used for)</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g., Coffee, Salary"
+                      autoFocus
+                    />
+                  </Form.Group>
+                  <Form.Group
+                    className="mb-3"
+                    controlId="exampleForm.ControlInput1"
+                  >
+                    <Form.Label>Credited or Debited</Form.Label>
+                    <br></br>
+                    <Button
+                      variant={creditButton ? "success" : "outline-success"}
+                      className="me-2"
+                      onClick={() => {
+                        setCreditButton(true);
+                        setDebitButton(false);
+                      }}
                     >
-                      {tx.type === "debit"
-                        ? `- $${Math.abs(tx.amount)}`
-                        : `+ $${tx.amount}`}
-                    </div>
-                    <div>
-                      <Badge bg="light" text="dark">
-                        {tx.type}
-                      </Badge>
-                    </div>
-                  </ListGroup.Item>
-                ))
-              ) : (
-                <Alert variant="info">No transactions available</Alert>
-              )}
-            </ListGroup>
-
-            <Button
-              variant="primary"
-              className="mt-3 w-100"
-              onClick={handleShow}
-            >
-              <PlusCircle /> Add Transaction
-            </Button>
-            <>
-              <Modal show={show} onHide={handleClose}>
-                <Modal.Header closeButton>
-                  <Modal.Title>Add Transaction</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                  <Form>
-                    <Form.Group
-                      className="mb-3"
-                      controlId="exampleForm.ControlInput1"
+                      Credited
+                    </Button>
+                    <Button
+                      variant={debitButton ? "danger" : "outline-danger"}
+                      onClick={() => {
+                        setDebitButton(true);
+                        setCreditButton(false);
+                      }}
                     >
-                      <Form.Label>Type(used for)</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g., Coffee, Salary"
-                        autoFocus
-                      />
-                    </Form.Group>
-                    <Form.Group
-                      className="mb-3"
-                      controlId="exampleForm.ControlInput1"
-                    >
-                      <Form.Label>Credited or Debited</Form.Label>
-                      <br></br>
-                      <Button
-                        variant={creditButton ? "success" : "outline-success"}
-                        className="me-2"
-                        onClick={() => {
-                          setCreditButton(true);
-                          setDebitButton(false);
-                        }}
-                      >
-                        Credited
-                      </Button>
-                      <Button
-                        variant={debitButton ? "danger" : "outline-danger"}
-                        onClick={() => {
-                          setDebitButton(true);
-                          setCreditButton(false);
-                        }}
-                      >
-                        Debited
-                      </Button>
-                    </Form.Group>
-                    <Form.Group
-                      className="mb-3"
-                      controlId="exampleForm.ControlInput1"
-                    >
-                      <Form.Label>Amount</Form.Label>
-                      <Form.Control
-                        type="number"
-                        value={newAmount}
-                        onChange={(e) => setNewAmount(e.target.value)}
-                        placeholder="+ 100 for income, - 50 for expense"
-                        autoFocus
-                      />
-                    </Form.Group>
-                  </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                  <Button variant="secondary" onClick={handleClose}>
-                    Close
-                  </Button>
-                  <Button variant="primary" onClick={handleAmountChange}>
-                    Save Changes
-                  </Button>
-                </Modal.Footer>
-              </Modal>
-              <Modal show={showReset} onHide={handleCloseRest}>
-                <Modal.Header closeButton>
-                  <Modal.Title>Reset App</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>Woohoo, You are Clearing!</Modal.Body>
-                <Modal.Footer>
-                  <Button variant="secondary" onClick={handleCloseRest}>
-                    Close
-                  </Button>
-                  <Button variant="danger" onClick={handleReset}>
-                    Save Changes
-                  </Button>
-                </Modal.Footer>
-              </Modal>
-            </>
-          </Card.Body>
-        </Card>
-      </Container>
-    
+                      Debited
+                    </Button>
+                  </Form.Group>
+                  <Form.Group
+                    className="mb-3"
+                    controlId="exampleForm.ControlInput1"
+                  >
+                    <Form.Label>Amount</Form.Label>
+                    <Form.Control
+                      type="number"
+                      value={newAmount}
+                      onChange={(e) => setNewAmount(e.target.value)}
+                      placeholder="+ 100 for income, - 50 for expense"
+                      autoFocus
+                    />
+                  </Form.Group>
+                </Form>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={handleClose}>
+                  Close
+                </Button>
+                <Button variant="primary" onClick={handleAmountChange}>
+                  Save Changes
+                </Button>
+              </Modal.Footer>
+            </Modal>
+            <Modal show={showReset} onHide={handleCloseRest}>
+              <Modal.Header closeButton>
+                <Modal.Title>Reset App</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>Woohoo, You are Clearing!</Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={handleCloseRest}>
+                  Close
+                </Button>
+                <Button variant="danger" onClick={handleReset}>
+                  Save Changes
+                </Button>
+              </Modal.Footer>
+            </Modal>
+          </>
+        </Card.Body>
+      </Card>
+    </Container>
   );
 }
 
