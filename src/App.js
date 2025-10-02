@@ -179,6 +179,7 @@ function App() {
         textAlign: "center",
         maxWidth: "500px",
         border: "1px solid #ddd",
+        height: "90%",
       }}
     >
       {/* Header */}
