@@ -10,7 +10,7 @@ import {
 } from "react-bootstrap";
 import { PlusCircle } from "react-bootstrap-icons";
 import { useState, useEffect } from "react";
-
+import { Sun, Moon } from "react-bootstrap-icons";
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
 import { Pie } from "react-chartjs-2";
@@ -28,7 +28,6 @@ function App() {
   window.addEventListener("online", () => setIsOnline(true));
   window.addEventListener("offline", () => setIsOnline(false));
 
-  
   const [show, setShow] = useState(false);
   const [name, setName] = useState("");
   let credit = transactions
@@ -50,8 +49,13 @@ function App() {
     datasets: [],
   });
 
-  const handleClose = () => { setShow(false); setShowReset(false); };
-  const handleShow = () => { setShow(true); };  
+  const handleClose = () => {
+    setShow(false);
+    setShowReset(false);
+  };
+  const handleShow = () => {
+    setShow(true);
+  };
   
 
   useEffect(() => {
@@ -101,6 +105,14 @@ function App() {
     setDebitButton(false);
     setName("");
   };
+  const [theme, setTheme] = useState("light");
+  useEffect(() => {
+    document.body.setAttribute("data-bs-theme", theme);
+  }, [theme]);
+
+  const toggleDarkMode = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   // const transactions = [
   //   { id: 1, name: "Coffee", amount: -3, icon: "☕" },
@@ -114,8 +126,10 @@ function App() {
   // ];
   const [showReset, setShowReset] = useState(false);
 
-  const handleShowReset = () => { setShowReset(true); };
-  const handleCloseRest = ()=> setShowReset(false);
+  const handleShowReset = () => {
+    setShowReset(true);
+  };
+  const handleCloseRest = () => setShowReset(false);
   const handleReset = () => {
     handleCloseRest();
     localStorage.clear();
@@ -123,14 +137,14 @@ function App() {
     setAmount(0);
     setCreditAmount(0);
     setDebitAmount(0);
-  }
+  };
   return (
-    <>
+    
       <Container
+        className={`p-3 rounded shadow-sm bg-${theme}`}
         style={{
           minWidth: "400px",
           marginTop: "20px",
-          backgroundColor: "#f8f9fa",
           borderRadius: "10px",
           padding: "10",
           boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
@@ -138,6 +152,7 @@ function App() {
           borderBottomRightRadius: "10px",
           textAlign: "center",
           maxWidth: "500px",
+          border: "1px solid #ddd",
         }}
       >
         {/* Header */}
@@ -156,12 +171,14 @@ function App() {
             </span>{" "}
             Finance App
           </h4>
+
           <p>Manage your finances effectively</p>
-          <Button
-            variant="light" size="sm"
-            onClick={handleShowReset}
-          >
+          <Button variant="light" size="sm" onClick={handleShowReset} className="p-2">
             Reset App
+          </Button>
+          <Button variant="secondary" onClick={toggleDarkMode} className="ms-2 p-2">
+          {theme === "dark" ? <Sun /> : <Moon />}{" "}
+          {theme === "dark" ? "Light Mode" : "Dark Mode"}
           </Button>
         </div>
 
@@ -337,9 +354,7 @@ function App() {
                 <Modal.Header closeButton>
                   <Modal.Title>Reset App</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
-                  Woohoo, You are Clearing!
-                </Modal.Body>
+                <Modal.Body>Woohoo, You are Clearing!</Modal.Body>
                 <Modal.Footer>
                   <Button variant="secondary" onClick={handleCloseRest}>
                     Close
@@ -353,8 +368,7 @@ function App() {
           </Card.Body>
         </Card>
       </Container>
-      
-    </>
+    
   );
 }
 
