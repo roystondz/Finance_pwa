@@ -114,6 +114,14 @@ function App() {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  
   // const transactions = [
   //   { id: 1, name: "Coffee", amount: -3, icon: "☕" },
   //   { id: 2, name: "Rent", amount: -500, icon: "🏠" },
@@ -138,6 +146,25 @@ function App() {
     setCreditAmount(0);
     setDebitAmount(0);
   };
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          backgroundColor: theme === "dark" ? "#121212" : "#f8f9fa",
+        }}
+      >
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     
       <Container
