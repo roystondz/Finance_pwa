@@ -66,7 +66,7 @@ function App() {
         },
       ],
     });
-  }, [creditAmount, debitAmount]);
+  }, [creditAmount, debitAmount,amount]);
 
   // Dark mode
   useEffect(() => {
