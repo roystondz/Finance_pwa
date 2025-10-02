@@ -127,7 +127,31 @@ function App() {
     setName("");
     setCreditButton(false);
     setDebitButton(false);
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("Transaction Added!", {
+        body: `${creditButton ? "Credit" : "Debit"} of $${parsedAmount} added successfully.`,
+        icon: "/icon.png", // your app icon
+      });
+    }    
   };
+
+  useEffect(() => {
+    if (amount < 100 && "Notification" in window && Notification.permission === "granted") {
+      new Notification("Low Balance Alert!", {
+        body: `Your balance is only $${amount}. Consider reviewing your expenses.`,
+        icon: "/icon.png",
+      });
+    }
+  }, [amount]);
+
+  useEffect(() => {
+    if ("Notification" in window) {
+      Notification.requestPermission().then((permission) => {
+        console.log("Notification permission:", permission);
+      });
+    }
+  }, []);
+  
 
   if (loading) {
     return (
