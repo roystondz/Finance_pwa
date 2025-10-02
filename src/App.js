@@ -39,7 +39,7 @@ function App() {
   const [creditAmount, setCreditAmount] = useState(credit);
   const [debitAmount, setDebitAmount] = useState(debit);
 
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState(credit - debit);
   const [newAmount, setNewAmount] = useState();
 
   const [creditButton, setCreditButton] = useState(false);
@@ -164,7 +164,7 @@ function App() {
       </div>
     );
   }
-  
+
   return (
     
       <Container
