@@ -9,6 +9,7 @@ import {
   Form,
   Row,
   Col,
+  Spinner,
 } from "react-bootstrap";
 import {
   PlusCircle,
@@ -17,26 +18,47 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Trash,
-  Tag,
   Trophy,
+  User,
+  Edit2,
 } from "lucide-react";
 import { Pie, Bar } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from "chart.js";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+} from "chart.js";
 import CountUp from "react-countup";
-import { startOfWeek, format, addDays } from "date-fns";
+import { startOfWeek, format, addDays, parseISO } from "date-fns";
 import "./App.css";
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement
+);
 
 // --- Transaction Item ---
 const TransactionItem = ({ tx, onDelete }) => {
   const isDebit = tx.type === "debit";
   return (
-    <Card className={`mb-2 transaction-item ${isDebit ? "debit" : "credit"}`} style={{ cursor: "pointer" }}>
+    <Card
+      className={`mb-2 transaction-item ${isDebit ? "debit" : "credit"}`}
+      style={{ cursor: "pointer" }}
+    >
       <Card.Body className="d-flex justify-content-between align-items-center p-3">
         <div className="d-flex align-items-center flex-grow-1">
           <div
-            className={`icon-circle ${isDebit ? "bg-danger" : "bg-success"} text-white d-flex align-items-center justify-content-center rounded-circle`}
+            className={`icon-circle ${
+              isDebit ? "bg-danger" : "bg-success"
+            } text-white d-flex align-items-center justify-content-center rounded-circle`}
           >
             {isDebit ? <ArrowDownCircle size={18} /> : <ArrowUpCircle size={18} />}
           </div>
@@ -44,15 +66,19 @@ const TransactionItem = ({ tx, onDelete }) => {
             <div className="fw-bold">{tx.name}</div>
             {tx.tags && tx.tags.length > 0 && (
               <div className="text-muted small d-flex flex-wrap gap-1 mt-1">
-                {tx.tags.map(tag => (
-                  <Badge key={tag} bg="secondary" className="tag-badge">{tag}</Badge>
+                {tx.tags.map((tag) => (
+                  <Badge key={tag} bg="secondary" className="tag-badge">
+                    {tag}
+                  </Badge>
                 ))}
               </div>
             )}
           </div>
         </div>
         <div className="d-flex align-items-center">
-          <div className={`me-3 ${isDebit ? "text-danger fw-bold" : "text-success fw-bold"}`}>
+          <div
+            className={`me-3 ${isDebit ? "text-danger fw-bold" : "text-success fw-bold"}`}
+          >
             {isDebit ? `- $${Math.abs(tx.amount).toFixed(2)}` : `+ $${tx.amount.toFixed(2)}`}
           </div>
           <Button variant="outline-danger" size="sm" onClick={() => onDelete(tx.id)}>
@@ -63,7 +89,6 @@ const TransactionItem = ({ tx, onDelete }) => {
     </Card>
   );
 };
-
 
 // --- Goal Item ---
 const GoalItem = ({ goal, currentAmount, onDelete }) => {
@@ -96,6 +121,8 @@ function FinanceApp() {
 
   const [showAddTx, setShowAddTx] = useState(false);
   const [showAddGoal, setShowAddGoal] = useState(false);
+  const [showEditUser, setShowEditUser] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState("");
   const [newAmount, setNewAmount] = useState("");
@@ -105,28 +132,29 @@ function FinanceApp() {
 
   const [goalName, setGoalName] = useState("");
   const [goalAmount, setGoalAmount] = useState("");
+
+  const [username, setUsername] = useState(localStorage.getItem("username") || "User");
+
   const toggleDarkMode = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    document.body.className = newTheme; // Apply theme class to <body>
+    document.body.className = newTheme; 
   };
   
-  // Set initial theme on mount
   useEffect(() => {
     document.body.className = theme;
-  }, []);
-  
-  // --- Calculate amounts ---
+  }, [theme]);
+
+  useEffect(() => { localStorage.setItem("transactions", JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem("goals", JSON.stringify(goals)); }, [goals]);
+  useEffect(() => { localStorage.setItem("username", username); }, [username]);
+
   const { creditAmount, debitAmount, amount } = useMemo(() => {
     const credit = transactions.filter(tx => tx.type === "credit").reduce((acc, tx) => acc + tx.amount, 0);
     const debit = transactions.filter(tx => tx.type === "debit").reduce((acc, tx) => acc + Math.abs(tx.amount), 0);
     return { creditAmount: credit, debitAmount: debit, amount: credit - debit };
   }, [transactions]);
 
-  useEffect(() => { localStorage.setItem("transactions", JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem("goals", JSON.stringify(goals)); }, [goals]);
-
-  // --- Handle transactions ---
   const handleAddTransaction = (e) => {
     e.preventDefault();
     if (!creditButton && !debitButton) return alert("Select Credit or Debit");
@@ -134,7 +162,11 @@ function FinanceApp() {
     if (isNaN(parsedAmount) || parsedAmount <= 0) return alert("Enter a valid amount");
     const type = creditButton ? "credit" : "debit";
     const parsedTags = (tags || '').split(',').map(t => t.trim()).filter(Boolean);
-    setTransactions([{ id: Date.now(), name: name || (type === "credit" ? "Income" : "Expense"), amount: parsedAmount, type, tags: parsedTags, date: new Date().toISOString() }, ...transactions]);
+    setLoading(true);
+    setTimeout(() => {
+      setTransactions([{ id: Date.now(), name: name || (type === "credit" ? "Income" : "Expense"), amount: parsedAmount, type, tags: parsedTags, date: new Date().toISOString() }, ...transactions]);
+      setLoading(false);
+    }, 300);
     setName(""); setNewAmount(""); setTags(""); setCreditButton(false); setDebitButton(false); setShowAddTx(false);
   };
 
@@ -149,65 +181,76 @@ function FinanceApp() {
   const handleDeleteTransaction = (id) => setTransactions(transactions.filter(tx => tx.id !== id));
   const handleDeleteGoal = (id) => setGoals(goals.filter(goal => goal.id !== id));
 
+  const handleSaveUsername = () => {
+    if (!username.trim()) return alert("Enter a valid name");
+    setShowEditUser(false);
+  };
 
   // --- Chart Data ---
   const tagChartData = useMemo(() => {
     const tagTotals = {};
-  
-    // Only include spending (debit) transactions
-    transactions
-      .filter(tx => tx.type === "debit")
-      .forEach(tx => {
-        if (tx.tags && tx.tags.length > 0) {
-          tx.tags.forEach(tag => {
-            if (!tagTotals[tag]) tagTotals[tag] = 0;
-            tagTotals[tag] += Math.abs(tx.amount);
-          });
-        }
-      });
-  
-    // Sort by amount descending and take top 5 tags for clarity
-    const sortedTags = Object.entries(tagTotals)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-  
+    transactions.filter(tx => tx.type === "debit").forEach(tx => {
+      if (tx.tags && tx.tags.length > 0) {
+        tx.tags.forEach(tag => {
+          if (!tagTotals[tag]) tagTotals[tag] = 0;
+          tagTotals[tag] += Math.abs(tx.amount);
+        });
+      }
+    });
+    const sortedTags = Object.entries(tagTotals).sort((a,b)=>b[1]-a[1]).slice(0,5);
     return {
       labels: sortedTags.map(([tag]) => tag),
-      datasets: [
-        {
-          data: sortedTags.map(([_, amount]) => amount),
-          backgroundColor: ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f"],
-          borderWidth: 1,
-          hoverOffset: 15, // nice hover effect
-        },
-      ],
+      datasets: [{ data: sortedTags.map(([_,amount])=>amount), backgroundColor: ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f"], borderWidth:1, hoverOffset:15}]
     };
   }, [transactions]);
-  
 
   const weeklyChartData = useMemo(() => {
     const start = startOfWeek(new Date(), { weekStartsOn: 1 });
     const days = Array.from({ length: 7 }, (_, i) => {
       const day = addDays(start, i);
-      const formatted = format(day, "EEE");
-      const dayTotal = transactions
-        .filter(tx => format(new Date(tx.date), "yyyy-MM-dd") === format(day, "yyyy-MM-dd"))
-        .reduce((sum, tx) => sum + (tx.type === "debit" ? Math.abs(tx.amount) : 0), 0);
-      return { day: formatted, total: dayTotal };
+      const dayTotal = transactions.filter(tx => format(parseISO(tx.date), "yyyy-MM-dd") === format(day, "yyyy-MM-dd") && tx.type==="debit")
+                                   .reduce((sum, tx) => sum + Math.abs(tx.amount),0);
+      return { day: format(day, "EEE"), total: dayTotal };
     });
-    return { labels: days.map(d => d.day), datasets: [{ label: "Weekly Spending", data: days.map(d => d.total), backgroundColor: "#f28e2b" }] };
+    return { labels: days.map(d => d.day), datasets: [{ label:"Weekly Spending", data: days.map(d=>d.total), backgroundColor:"#f28e2b"}] };
+  }, [transactions]);
+
+  // --- Transactions grouped by month ---
+  const monthlyTransactions = useMemo(() => {
+    const groups = {};
+    transactions.forEach(tx => {
+      const date = parseISO(tx.date);
+      const monthKey = format(date, "MMMM yyyy");
+      if (!groups[monthKey]) groups[monthKey] = [];
+      groups[monthKey].push(tx);
+    });
+    const sortedKeys = Object.keys(groups).sort((a,b)=>{
+      const dateA = new Date(a), dateB = new Date(b);
+      return dateB - dateA; // descending
+    });
+    return sortedKeys.map(key => ({ month: key, transactions: groups[key] }));
   }, [transactions]);
 
   // --- Render ---
   const renderActiveView = () => {
-    switch (activeView) {
+    if (loading) return <div className="text-center my-5"><Spinner animation="border" /></div>;
+    switch(activeView){
       case "dashboard":
         return (
           <>
             <Card className="text-center mb-3">
               <Card.Body>
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <div className="d-flex align-items-center">
+                    <User size={24} className="me-2" />
+                    <div className="fw-bold">Hello, {username}</div>
+                    <Button size="sm" variant="outline-secondary" className="ms-2" onClick={()=>setShowEditUser(true)}><Edit2 size={16}/></Button>
+                  </div>
+                </div>
                 <Card.Title>Current Balance</Card.Title>
-                <Card.Text className="fs-3"><CountUp end={amount} duration={.5} prefix="$" separator="," decimals={2} /></Card.Text>
+                <Card.Text className="fs-3">
+                  <CountUp end={amount} duration={0.5} prefix="$" separator="," decimals={2} />
+                </Card.Text>
               </Card.Body>
             </Card>
             <Row className="mb-3">
@@ -215,7 +258,9 @@ function FinanceApp() {
                 <Card className="text-center">
                   <Card.Body>
                     <Card.Title>Status</Card.Title>
-                    <Badge bg={navigator.onLine ? "success" : "secondary"}>{navigator.onLine ? "ONLINE" : "OFFLINE"}</Badge>
+                    <Badge bg={navigator.onLine ? "success" : "secondary"}>
+                      {navigator.onLine ? "ONLINE" : "OFFLINE"}
+                    </Badge>
                   </Card.Body>
                 </Card>
               </Col>
@@ -231,7 +276,12 @@ function FinanceApp() {
           </>
         );
       case "transactions":
-        return <ListGroup>{transactions.map(tx => <TransactionItem key={tx.id} tx={tx} onDelete={handleDeleteTransaction} />)}</ListGroup>;
+        return monthlyTransactions.map(m => (
+          <div key={m.month} className="mb-4">
+            <h5 className="mb-2">{m.month}</h5>
+            {m.transactions.map(tx => <TransactionItem key={tx.id} tx={tx} onDelete={handleDeleteTransaction} />)}
+          </div>
+        ));
       case "goals":
         return goals.map(goal => <GoalItem key={goal.id} goal={goal} currentAmount={amount} onDelete={handleDeleteGoal} />);
       case "charts":
@@ -255,77 +305,89 @@ function FinanceApp() {
             </Col>
           </Row>
         );
-      default:
-        return null;
+      default: return null;
     }
   };
 
   return (
     <Container fluid className={`p-4 ${theme}`}>
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
         <h4>Finance App</h4>
         <Button variant="outline-secondary" onClick={toggleDarkMode}>
-          {theme === "light" ? <Moon /> : <Sun />}
+          {theme==="light"?<Moon/>:<Sun/>}
         </Button>
       </div>
 
       <div className="d-flex gap-2 flex-wrap mb-3">
-        <Button variant={activeView === "dashboard" ? "primary" : "outline-primary"} onClick={() => setActiveView("dashboard")}>Dashboard</Button>
-        <Button variant={activeView === "transactions" ? "primary" : "outline-primary"} onClick={() => setActiveView("transactions")}>Transactions</Button>
-        <Button variant={activeView === "goals" ? "primary" : "outline-primary"} onClick={() => setActiveView("goals")}>Goals</Button>
-        <Button variant={activeView === "charts" ? "primary" : "outline-primary"} onClick={() => setActiveView("charts")}>Charts</Button>
+        <Button variant={activeView==="dashboard"?"primary":"outline-primary"} onClick={()=>setActiveView("dashboard")}>Dashboard</Button>
+        <Button variant={activeView==="transactions"?"primary":"outline-primary"} onClick={()=>setActiveView("transactions")}>Transactions</Button>
+        <Button variant={activeView==="goals"?"primary":"outline-primary"} onClick={()=>setActiveView("goals")}>Goals</Button>
+        <Button variant={activeView==="charts"?"primary":"outline-primary"} onClick={()=>setActiveView("charts")}>Charts</Button>
       </div>
 
       <div className="mb-3 d-flex gap-2 flex-wrap">
-        <Button variant="success" onClick={() => setShowAddTx(true)}><PlusCircle /> Add Transaction</Button>
-        <Button variant="info" onClick={() => setShowAddGoal(true)}><Trophy /> Add Goal</Button>
+        <Button variant="success" onClick={()=>setShowAddTx(true)}><PlusCircle/> Add Transaction</Button>
+        <Button variant="info" onClick={()=>setShowAddGoal(true)}><Trophy/> Add Goal</Button>
       </div>
 
       {renderActiveView()}
 
-      {/* Add Transaction Modal */}
-      <Modal show={showAddTx} onHide={() => setShowAddTx(false)}>
+      {/* Modals */}
+      <Modal show={showAddTx} onHide={()=>setShowAddTx(false)}>
         <Modal.Header closeButton><Modal.Title>Add Transaction</Modal.Title></Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleAddTransaction}>
             <Form.Group className="mb-2">
               <Form.Label>Name</Form.Label>
-              <Form.Control type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Transaction Name" />
+              <Form.Control type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Transaction Name" />
             </Form.Group>
             <Form.Group className="mb-2">
               <Form.Label>Amount</Form.Label>
-              <Form.Control type="number" value={newAmount} onChange={e => setNewAmount(e.target.value)} placeholder="0.00" />
+              <Form.Control type="number" value={newAmount} onChange={e=>setNewAmount(e.target.value)} placeholder="0.00" />
             </Form.Group>
             <Form.Group className="mb-2">
               <Form.Label>Tags (comma separated)</Form.Label>
-              <Form.Control type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="food, rent" />
+              <Form.Control type="text" value={tags} onChange={e=>setTags(e.target.value)} placeholder="food, rent" />
             </Form.Group>
             <div className="mb-3 d-flex gap-2">
-              <Button variant={creditButton ? "success" : "outline-success"} onClick={() => { setCreditButton(!creditButton); setDebitButton(false); }}>Credit</Button>
-              <Button variant={debitButton ? "danger" : "outline-danger"} onClick={() => { setDebitButton(!debitButton); setCreditButton(false); }}>Debit</Button>
+              <Button variant={creditButton?"success":"outline-success"} onClick={()=>{ setCreditButton(!creditButton); setDebitButton(false); }}>Credit</Button>
+              <Button variant={debitButton?"danger":"outline-danger"} onClick={()=>{ setDebitButton(!debitButton); setCreditButton(false); }}>Debit</Button>
             </div>
             <Button type="submit" className="w-100">Add Transaction</Button>
           </Form>
         </Modal.Body>
       </Modal>
 
-      {/* Add Goal Modal */}
-      <Modal show={showAddGoal} onHide={() => setShowAddGoal(false)}>
+      <Modal show={showAddGoal} onHide={()=>setShowAddGoal(false)}>
         <Modal.Header closeButton><Modal.Title>Add Goal</Modal.Title></Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleAddGoal}>
             <Form.Group className="mb-2">
               <Form.Label>Goal Name</Form.Label>
-              <Form.Control type="text" value={goalName} onChange={e => setGoalName(e.target.value)} placeholder="Goal Name" />
+              <Form.Control type="text" value={goalName} onChange={e=>setGoalName(e.target.value)} placeholder="Goal Name" />
             </Form.Group>
             <Form.Group className="mb-2">
               <Form.Label>Target Amount</Form.Label>
-              <Form.Control type="number" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} placeholder="0.00" />
+              <Form.Control type="number" value={goalAmount} onChange={e=>setGoalAmount(e.target.value)} placeholder="0.00" />
             </Form.Group>
             <Button type="submit" className="w-100">Add Goal</Button>
           </Form>
         </Modal.Body>
       </Modal>
+
+      <Modal show={showEditUser} onHide={()=>setShowEditUser(false)}>
+        <Modal.Header closeButton><Modal.Title>Edit Username</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={(e)=>{ e.preventDefault(); handleSaveUsername(); }}>
+            <Form.Group className="mb-2">
+              <Form.Label>Username</Form.Label>
+              <Form.Control type="text" value={username} onChange={e=>setUsername(e.target.value)} placeholder="Enter your name"/>
+            </Form.Group>
+            <Button type="submit" className="w-100">Save</Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
     </Container>
   );
 }
