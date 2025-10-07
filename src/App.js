@@ -1,350 +1,333 @@
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Container,
-  Row,
-  Col,
   Card,
   Button,
   Badge,
   ListGroup,
-  Alert,
-  Tab,
-  Tabs,
+  Modal,
+  Form,
+  Row,
+  Col,
 } from "react-bootstrap";
-import { PlusCircle, Sun, Moon } from "react-bootstrap-icons";
-import { useState, useEffect } from "react";
-import Form from "react-bootstrap/Form";
-import Modal from "react-bootstrap/Modal";
-import { Pie } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import {
+  PlusCircle,
+  Sun,
+  Moon,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Trash,
+  Tag,
+  Trophy,
+} from "lucide-react";
+import { Pie, Bar } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from "chart.js";
+import CountUp from "react-countup";
+import { startOfWeek, format, addDays } from "date-fns";
+import "./App.css";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
-function App() {
-  const storedTransactions = JSON.parse(localStorage.getItem("transactions")) || [];
-  const [transactions, setTransactions] = useState(storedTransactions);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+// --- Transaction Item ---
+const TransactionItem = ({ tx, onDelete }) => {
+  const isDebit = tx.type === "debit";
+  return (
+    <Card className={`mb-2 transaction-item ${isDebit ? "debit" : "credit"}`} style={{ cursor: "pointer" }}>
+      <Card.Body className="d-flex justify-content-between align-items-center p-3">
+        <div className="d-flex align-items-center flex-grow-1">
+          <div
+            className={`icon-circle ${isDebit ? "bg-danger" : "bg-success"} text-white d-flex align-items-center justify-content-center rounded-circle`}
+          >
+            {isDebit ? <ArrowDownCircle size={18} /> : <ArrowUpCircle size={18} />}
+          </div>
+          <div className="ms-3">
+            <div className="fw-bold">{tx.name}</div>
+            {tx.tags && tx.tags.length > 0 && (
+              <div className="text-muted small d-flex flex-wrap gap-1 mt-1">
+                {tx.tags.map(tag => (
+                  <Badge key={tag} bg="secondary" className="tag-badge">{tag}</Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="d-flex align-items-center">
+          <div className={`me-3 ${isDebit ? "text-danger fw-bold" : "text-success fw-bold"}`}>
+            {isDebit ? `- $${Math.abs(tx.amount).toFixed(2)}` : `+ $${tx.amount.toFixed(2)}`}
+          </div>
+          <Button variant="outline-danger" size="sm" onClick={() => onDelete(tx.id)}>
+            <Trash size={14} />
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+};
+
+
+// --- Goal Item ---
+const GoalItem = ({ goal, currentAmount, onDelete }) => {
+  const progress = Math.min(100, (currentAmount / goal.amount) * 100);
+  const remaining = Math.max(0, goal.amount - currentAmount);
+
+  return (
+    <Card className="text-center mb-3">
+      <Card.Body>
+        <Card.Title>{goal.name}</Card.Title>
+        <Card.Text>Target: ${goal.amount.toFixed(2)}</Card.Text>
+        <div className="progress mb-2" style={{ height: "10px" }}>
+          <div className="progress-bar" role="progressbar" style={{ width: `${progress}%` }}></div>
+        </div>
+        <p className="mb-2 small">
+          {progress >= 100 ? "Goal Achieved!" : `Remaining: $${remaining.toFixed(2)}`}
+        </p>
+        <Button variant="outline-danger" size="sm" onClick={() => onDelete(goal.id)}>Delete Goal</Button>
+      </Card.Body>
+    </Card>
+  );
+};
+
+// --- Main App ---
+function FinanceApp() {
+  const [transactions, setTransactions] = useState(JSON.parse(localStorage.getItem("transactions")) || []);
+  const [goals, setGoals] = useState(JSON.parse(localStorage.getItem("goals")) || [{ id: 1, name: "Emergency Fund", amount: 5000 }]);
   const [theme, setTheme] = useState("light");
-  const [show, setShow] = useState(false);
-  const [showReset, setShowReset] = useState(false);
+  const [activeView, setActiveView] = useState("dashboard");
+
+  const [showAddTx, setShowAddTx] = useState(false);
+  const [showAddGoal, setShowAddGoal] = useState(false);
+
   const [name, setName] = useState("");
   const [newAmount, setNewAmount] = useState("");
+  const [tags, setTags] = useState("");
   const [creditButton, setCreditButton] = useState(false);
   const [debitButton, setDebitButton] = useState(false);
 
-  const [creditAmount, setCreditAmount] = useState(
-    storedTransactions.filter(tx => tx.type === "credit").reduce((acc, tx) => acc + tx.amount, 0)
-  );
-  const [debitAmount, setDebitAmount] = useState(
-    storedTransactions.filter(tx => tx.type === "debit").reduce((acc, tx) => acc + Math.abs(tx.amount), 0)
-  );
-  const [amount, setAmount] = useState(creditAmount - debitAmount);
-  const [data, setData] = useState({ labels: [], datasets: [] });
-  const [loading, setLoading] = useState(true);
-
-  // Online/offline
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
-
-  // Chart data
-  useEffect(() => {
-    setData({
-      labels: ["Credit", "Debit"],
-      datasets: [
-        {
-          data: [creditAmount || 0, debitAmount || 0],
-          backgroundColor: ["rgba(54, 162, 235, 0.7)", "rgba(255, 99, 132, 0.7)"],
-          borderColor: ["rgba(54, 162, 235, 1)", "rgba(255, 99, 132, 1)"],
-          borderWidth: 1,
-        },
-      ],
-    });
-  }, [creditAmount, debitAmount,amount]);
-
-  // Dark mode
-  useEffect(() => {
-    document.body.setAttribute("data-bs-theme", theme);
-  }, [theme]);
-  const toggleDarkMode = () => setTheme(theme === "dark" ? "light" : "dark");
-
-  // Loading
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 800);
-  }, []);
-
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
-
-  const handleCloseReset = () => setShowReset(false);
-  const handleShowReset = () => setShowReset(true);
-  const handleReset = () => {
-    localStorage.clear();
-    setTransactions([]);
-    setAmount(0);
-    setCreditAmount(0);
-    setDebitAmount(0);
-    handleCloseReset();
+  const [goalName, setGoalName] = useState("");
+  const [goalAmount, setGoalAmount] = useState("");
+  const toggleDarkMode = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    document.body.className = newTheme; // Apply theme class to <body>
   };
-
-  const handleAmountChange = (e) => {
-    e.preventDefault();
-    handleClose();
-    if (!creditButton && !debitButton) return alert("Please select Credit or Debit");
-
-    const parsedAmount = parseInt(newAmount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return alert("Enter a valid amount");
-
-    const type = creditButton ? "credit" : "debit";
-    const icon = creditButton ? "💵" : "🛒";
-
-    const newTransaction = {
-      id: transactions.length + 1,
-      name: `${transactions.length + 1} - ${name}`,
-      amount: parsedAmount,
-      type,
-      icon,
-    };
-
-    localStorage.setItem("transactions", JSON.stringify([newTransaction, ...transactions]));
-    setTransactions([newTransaction, ...transactions]);
-
-    if (creditButton) {
-      setCreditAmount(prev => prev + parsedAmount);
-      setAmount(prev => prev + parsedAmount);
-    } else {
-      setDebitAmount(prev => prev + parsedAmount);
-      setAmount(prev => prev - parsedAmount);
-    }
-
-    setNewAmount("");
-    setName("");
-    setCreditButton(false);
-    setDebitButton(false);
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("Transaction Added!", {
-        body: `${creditButton ? "Credit" : "Debit"} of $${parsedAmount} added successfully.`,
-        icon: "/icon.png", // your app icon
-      });
-    }    
-  };
-
+  
+  // Set initial theme on mount
   useEffect(() => {
-    if (amount < 100 && "Notification" in window && Notification.permission === "granted") {
-      new Notification("Low Balance Alert!", {
-        body: `Your balance is only $${amount}. Consider reviewing your expenses.`,
-        icon: "/icon.png",
-      });
-    }
-  }, [amount]);
-
-  useEffect(() => {
-    if ("Notification" in window) {
-      Notification.requestPermission().then((permission) => {
-        console.log("Notification permission:", permission);
-      });
-    }
+    document.body.className = theme;
   }, []);
   
+  // --- Calculate amounts ---
+  const { creditAmount, debitAmount, amount } = useMemo(() => {
+    const credit = transactions.filter(tx => tx.type === "credit").reduce((acc, tx) => acc + tx.amount, 0);
+    const debit = transactions.filter(tx => tx.type === "debit").reduce((acc, tx) => acc + Math.abs(tx.amount), 0);
+    return { creditAmount: credit, debitAmount: debit, amount: credit - debit };
+  }, [transactions]);
 
-  if (loading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          backgroundColor: theme === "dark" ? "#121212" : "#f8f9fa",
-        }}
-      >
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => { localStorage.setItem("transactions", JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem("goals", JSON.stringify(goals)); }, [goals]);
+
+  // --- Handle transactions ---
+  const handleAddTransaction = (e) => {
+    e.preventDefault();
+    if (!creditButton && !debitButton) return alert("Select Credit or Debit");
+    const parsedAmount = parseFloat(newAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return alert("Enter a valid amount");
+    const type = creditButton ? "credit" : "debit";
+    const parsedTags = (tags || '').split(',').map(t => t.trim()).filter(Boolean);
+    setTransactions([{ id: Date.now(), name: name || (type === "credit" ? "Income" : "Expense"), amount: parsedAmount, type, tags: parsedTags, date: new Date().toISOString() }, ...transactions]);
+    setName(""); setNewAmount(""); setTags(""); setCreditButton(false); setDebitButton(false); setShowAddTx(false);
+  };
+
+  const handleAddGoal = (e) => {
+    e.preventDefault();
+    const parsedAmount = parseFloat(goalAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return alert("Enter a valid goal amount");
+    setGoals([...goals, { id: Date.now(), name: goalName || "New Goal", amount: parsedAmount }]);
+    setGoalName(""); setGoalAmount(""); setShowAddGoal(false);
+  };
+
+  const handleDeleteTransaction = (id) => setTransactions(transactions.filter(tx => tx.id !== id));
+  const handleDeleteGoal = (id) => setGoals(goals.filter(goal => goal.id !== id));
+
+
+  // --- Chart Data ---
+  const tagChartData = useMemo(() => {
+    const tagTotals = {};
+  
+    // Only include spending (debit) transactions
+    transactions
+      .filter(tx => tx.type === "debit")
+      .forEach(tx => {
+        if (tx.tags && tx.tags.length > 0) {
+          tx.tags.forEach(tag => {
+            if (!tagTotals[tag]) tagTotals[tag] = 0;
+            tagTotals[tag] += Math.abs(tx.amount);
+          });
+        }
+      });
+  
+    // Sort by amount descending and take top 5 tags for clarity
+    const sortedTags = Object.entries(tagTotals)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  
+    return {
+      labels: sortedTags.map(([tag]) => tag),
+      datasets: [
+        {
+          data: sortedTags.map(([_, amount]) => amount),
+          backgroundColor: ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f"],
+          borderWidth: 1,
+          hoverOffset: 15, // nice hover effect
+        },
+      ],
+    };
+  }, [transactions]);
+  
+
+  const weeklyChartData = useMemo(() => {
+    const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const day = addDays(start, i);
+      const formatted = format(day, "EEE");
+      const dayTotal = transactions
+        .filter(tx => format(new Date(tx.date), "yyyy-MM-dd") === format(day, "yyyy-MM-dd"))
+        .reduce((sum, tx) => sum + (tx.type === "debit" ? Math.abs(tx.amount) : 0), 0);
+      return { day: formatted, total: dayTotal };
+    });
+    return { labels: days.map(d => d.day), datasets: [{ label: "Weekly Spending", data: days.map(d => d.total), backgroundColor: "#f28e2b" }] };
+  }, [transactions]);
+
+  // --- Render ---
+  const renderActiveView = () => {
+    switch (activeView) {
+      case "dashboard":
+        return (
+          <>
+            <Card className="text-center mb-3">
+              <Card.Body>
+                <Card.Title>Current Balance</Card.Title>
+                <Card.Text className="fs-3"><CountUp end={amount} duration={.5} prefix="$" separator="," decimals={2} /></Card.Text>
+              </Card.Body>
+            </Card>
+            <Row className="mb-3">
+              <Col md={6} className="mb-3 mb-md-0">
+                <Card className="text-center">
+                  <Card.Body>
+                    <Card.Title>Status</Card.Title>
+                    <Badge bg={navigator.onLine ? "success" : "secondary"}>{navigator.onLine ? "ONLINE" : "OFFLINE"}</Badge>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={6}>
+                <Card className="text-center">
+                  <Card.Body>
+                    <Card.Title>Weekly Spending</Card.Title>
+                    <Bar data={weeklyChartData} options={{ responsive:true, plugins:{legend:{display:false}}}}/>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          </>
+        );
+      case "transactions":
+        return <ListGroup>{transactions.map(tx => <TransactionItem key={tx.id} tx={tx} onDelete={handleDeleteTransaction} />)}</ListGroup>;
+      case "goals":
+        return goals.map(goal => <GoalItem key={goal.id} goal={goal} currentAmount={amount} onDelete={handleDeleteGoal} />);
+      case "charts":
+        return (
+          <Row>
+            <Col md={6} className="mb-3 mb-md-0">
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Title>Spending by Tags</Card.Title>
+                  <Pie data={tagChartData} />
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={6}>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Title>Weekly Spending</Card.Title>
+                  <Bar data={weeklyChartData} />
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <Container fluid className="p-3" style={{ backgroundColor: theme === "dark" ? "#121212" : "#f8f9fa", minHeight: "100vh" }}>
-      <div style={{ maxWidth: "900px", margin: "auto" }}>
-        {/* Header */}
-        <div
-          className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"
-          style={{
-            backgroundColor: "#007bff",
-            color: "white",
-            padding: "20px",
-            borderRadius: "10px",
-          }}
-        >
-          <div>
-            <h4>👛 Finance App</h4>
-            <p className="mb-0">Manage your finances effectively</p>
-          </div>
-          <div className="d-flex flex-wrap gap-2">
-            <Button size="sm" variant="light" onClick={handleShowReset}>
-              Reset App
-            </Button>
-            <Button size="sm" variant="secondary" onClick={toggleDarkMode}>
-              {theme === "dark" ? <Sun /> : <Moon />}
-            </Button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <Tabs defaultActiveKey="dashboard" id="main-tabs" className="mb-3" fill>
-          <Tab eventKey="dashboard" title="Dashboard">
-            <Card className="p-3">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2>${amount}</h2>
-                <Badge bg={isOnline ? "success" : "secondary"}>
-                  {isOnline ? "Online" : "Offline"}
-                </Badge>
-              </div>
-
-              <Row className="mb-3">
-                <Col xs={12} md={6} className="mb-2">
-                  <Card className="text-center">
-                    <Card.Body>
-                      <Card.Title>Income</Card.Title>
-                      <Card.Text>${creditAmount}</Card.Text>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                <Col xs={12} md={6} className="mb-2">
-                  <Card className="text-center">
-                    <Card.Body>
-                      <Card.Title>Expenses</Card.Title>
-                      <Card.Text>${debitAmount}</Card.Text>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              </Row>
-
-              <h5>Income Distribution Chart</h5>
-              {amount !== 0 ? (
-                <div style={{ maxWidth: "400px", margin: "auto", height: "250px" }}>
-                  <Pie data={data} options={{ responsive: true, maintainAspectRatio: false }} />
-                </div>
-              ) : (
-                <Alert variant="info">No data available for chart</Alert>
-              )}
-            </Card>
-          </Tab>
-
-          <Tab eventKey="transactions" title="Transactions">
-            <Card className="p-3">
-              <ListGroup style={{ maxHeight: "50vh", overflowY: "auto" }}>
-                {transactions.length > 0 ? (
-                  transactions.map(tx => (
-                    <ListGroup.Item key={tx.id} className="d-flex justify-content-between align-items-center">
-                      <div>
-                        <span style={{ fontSize: "1.2rem", marginRight: "10px" }}>{tx.icon}</span>
-                        {tx.name}
-                      </div>
-                      <div style={{ color: tx.type === "debit" ? "red" : "green" }}>
-                        {tx.type === "debit" ? `- $${Math.abs(tx.amount)}` : `+ $${tx.amount}`}
-                      </div>
-                      <Badge bg="light" text="dark">{tx.type}</Badge>
-                    </ListGroup.Item>
-                  ))
-                ) : (
-                  <Alert variant="info">No transactions available</Alert>
-                )}
-              </ListGroup>
-              <Button variant="primary" className="mt-3 w-100" onClick={handleShow}>
-                <PlusCircle /> Add Transaction
-              </Button>
-            </Card>
-          </Tab>
-        </Tabs>
-
-        {/* Add Transaction Modal */}
-        <Modal show={show} onHide={handleClose}>
-          <Modal.Header closeButton>
-            <Modal.Title>Add Transaction</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Type (used for)</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g., Coffee, Salary"
-                  autoFocus
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Credited or Debited</Form.Label>
-                <br />
-                <Button
-                  variant={creditButton ? "success" : "outline-success"}
-                  className="me-2"
-                  onClick={() => {
-                    setCreditButton(true);
-                    setDebitButton(false);
-                  }}
-                >
-                  Credited
-                </Button>
-                <Button
-                  variant={debitButton ? "danger" : "outline-danger"}
-                  onClick={() => {
-                    setDebitButton(true);
-                    setCreditButton(false);
-                  }}
-                >
-                  Debited
-                </Button>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Amount</Form.Label>
-                <Form.Control
-                  type="number"
-                  value={newAmount}
-                  onChange={(e) => setNewAmount(e.target.value)}
-                  placeholder="+ 100 for income, - 50 for expense"
-                />
-              </Form.Group>
-            </Form>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleClose}>
-              Close
-            </Button>
-            <Button variant="primary" onClick={handleAmountChange}>
-              Save Changes
-            </Button>
-          </Modal.Footer>
-        </Modal>
-
-        {/* Reset Modal */}
-        <Modal show={showReset} onHide={handleCloseReset}>
-          <Modal.Header closeButton>
-            <Modal.Title>Reset App</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>Are you sure you want to clear all data?</Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseReset}>
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={handleReset}>
-              Reset
-            </Button>
-          </Modal.Footer>
-        </Modal>
+    <Container fluid className={`p-4 ${theme}`}>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h4>Finance App</h4>
+        <Button variant="outline-secondary" onClick={toggleDarkMode}>
+          {theme === "light" ? <Moon /> : <Sun />}
+        </Button>
       </div>
+
+      <div className="d-flex gap-2 flex-wrap mb-3">
+        <Button variant={activeView === "dashboard" ? "primary" : "outline-primary"} onClick={() => setActiveView("dashboard")}>Dashboard</Button>
+        <Button variant={activeView === "transactions" ? "primary" : "outline-primary"} onClick={() => setActiveView("transactions")}>Transactions</Button>
+        <Button variant={activeView === "goals" ? "primary" : "outline-primary"} onClick={() => setActiveView("goals")}>Goals</Button>
+        <Button variant={activeView === "charts" ? "primary" : "outline-primary"} onClick={() => setActiveView("charts")}>Charts</Button>
+      </div>
+
+      <div className="mb-3 d-flex gap-2 flex-wrap">
+        <Button variant="success" onClick={() => setShowAddTx(true)}><PlusCircle /> Add Transaction</Button>
+        <Button variant="info" onClick={() => setShowAddGoal(true)}><Trophy /> Add Goal</Button>
+      </div>
+
+      {renderActiveView()}
+
+      {/* Add Transaction Modal */}
+      <Modal show={showAddTx} onHide={() => setShowAddTx(false)}>
+        <Modal.Header closeButton><Modal.Title>Add Transaction</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleAddTransaction}>
+            <Form.Group className="mb-2">
+              <Form.Label>Name</Form.Label>
+              <Form.Control type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Transaction Name" />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Amount</Form.Label>
+              <Form.Control type="number" value={newAmount} onChange={e => setNewAmount(e.target.value)} placeholder="0.00" />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Tags (comma separated)</Form.Label>
+              <Form.Control type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="food, rent" />
+            </Form.Group>
+            <div className="mb-3 d-flex gap-2">
+              <Button variant={creditButton ? "success" : "outline-success"} onClick={() => { setCreditButton(!creditButton); setDebitButton(false); }}>Credit</Button>
+              <Button variant={debitButton ? "danger" : "outline-danger"} onClick={() => { setDebitButton(!debitButton); setCreditButton(false); }}>Debit</Button>
+            </div>
+            <Button type="submit" className="w-100">Add Transaction</Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Add Goal Modal */}
+      <Modal show={showAddGoal} onHide={() => setShowAddGoal(false)}>
+        <Modal.Header closeButton><Modal.Title>Add Goal</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleAddGoal}>
+            <Form.Group className="mb-2">
+              <Form.Label>Goal Name</Form.Label>
+              <Form.Control type="text" value={goalName} onChange={e => setGoalName(e.target.value)} placeholder="Goal Name" />
+            </Form.Group>
+            <Form.Group className="mb-2">
+              <Form.Label>Target Amount</Form.Label>
+              <Form.Control type="number" value={goalAmount} onChange={e => setGoalAmount(e.target.value)} placeholder="0.00" />
+            </Form.Group>
+            <Button type="submit" className="w-100">Add Goal</Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 }
 
-export default App;
+export default FinanceApp;

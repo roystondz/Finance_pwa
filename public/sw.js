@@ -1,4 +1,4 @@
-let cacheData = "appV3";
+let cacheData = "appV4";
 
 this.addEventListener("install",(event)=>{
     event.waitUntil(
